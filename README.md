@@ -1,14 +1,14 @@
-# SCHED_TEK Artifact (Reproduction Package)
+# SCHED_BRS Artifact (Reproduction Package)
 
 This repository contains a faithful, **runnable simulator**, benchmark harness, and analysis scripts that reproduce the core findings and figures logic from the SCHED_TEK paper. It also ships a placeholder kernel patch showing how the bias hooks are integrated; you can replace it with your production patch when ready.
 
 > Paper reference: “Responsiveness Is Not a Trade-Off: Revisiting Kernel Scheduling with Controlled Bias.” fileciteturn0file0
 
 ## What’s inside
-- `sched_tek_sim/` — Python simulator of the bounded-bias scheduler (vruntime bias, tie-breaker, hybrid controller with fairness floor & starvation cap).
+- `sched_brs_sim/` — Python simulator of the bounded-bias scheduler (vruntime bias, tie-breaker, hybrid controller with fairness floor & starvation cap).
 - `benchmarks/` — Synthetic yet representative workloads (interactive, gaming/graphics, AI inference, streaming, analytics) and a `run_all.sh` that emits CSVs to `results/`.
 - `scripts/` — `analyze_results.py` to compute P95 latency, Jain’s index, starvation rate, and Perf/W proxies from CSVs.
-- `kernel_patches/` — A minimal patch sketch (`sched_tek.patch`) with the expected CFS touch points, guards, and `/proc/sys/sched_tek` knobs.
+- `kernel_patches/` — A minimal patch sketch (`sched_brs.patch`) with the expected CFS touch points, guards, and `/proc/sys/kernel/sched_brs` knobs.
 - `ci/` — A lightweight CI script that runs the simulator and basic regression checks.
 - `results/` — Output directory for generated CSVs and summaries.
 - `LICENSE.md` — Apache-2.0.
