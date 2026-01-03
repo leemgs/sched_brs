@@ -5,7 +5,8 @@
 
 This repository contains a faithful, **runnable simulator**, benchmark harness, and analysis scripts that reproduce the core findings and figures logic from the SCHED_TEK paper. It also ships a placeholder kernel patch showing how the bias hooks are integrated; you can replace it with your production patch when ready.
 
-> Paper reference: “Responsiveness Is Not a Trade-Off: Revisiting Kernel Scheduling with Controlled Bias.” fileciteturn0file0
+* Out-of-date name: SCHED_TEK
+* State-of-the-art name: SCHED_BRS
 
 ## What’s inside
 - `sched_brs_sim/` — Python simulator of the bounded-bias scheduler (vruntime bias, tie-breaker, hybrid controller with fairness floor & starvation cap).
