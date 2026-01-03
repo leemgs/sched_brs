@@ -1,4 +1,7 @@
 # SCHED_BRS Artifact (Reproduction Package)
+<p align="center">
+  <img src="brs_logo01.png" alt="BRS Logo" width="300"/>
+</p>
 
 This repository contains a faithful, **runnable simulator**, benchmark harness, and analysis scripts that reproduce the core findings and figures logic from the SCHED_TEK paper. It also ships a placeholder kernel patch showing how the bias hooks are integrated; you can replace it with your production patch when ready.
 
