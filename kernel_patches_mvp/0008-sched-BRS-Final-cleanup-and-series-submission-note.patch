@@ -1,17 +1,17 @@
 // File: kernel_patches/0008-sched-tek-Final-cleanup-and-series-submission-note.patch
-// This patch performs final trivial cleanups across the SCHED_TEK series, 
+// This patch performs final trivial cleanups across the SCHED_BRS series, 
 // ensuring adherence to coding standards, and serves as the final submission patch 
 // for the entire [01/08] to [08/08] series.
 
 #include <linux/compiler.h>
-#include <linux/sched_tek.h>
+#include <linux/sched_brs.h>
 
 // --- A. Trivial Cleanup: Correcting MISRA-C/Sparse warnings (Pseudo-code) ---
 
 // Example: Ensuring static functions are unused outside their file, 
 // or adding required attributes.
-#ifdef CONFIG_SCHED_TEK
-static inline __maybe_unused u64 sched_tek_get_interactivity_score(struct task_struct *curr)
+#ifdef CONFIG_SCHED_BRS
+static inline __maybe_unused u64 sched_brs_get_interactivity_score(struct task_struct *curr)
 {
     // ... logic from 0002-patch ...
     return B_i_fixed / 1024.0;
@@ -20,7 +20,7 @@ static inline __maybe_unused u64 sched_tek_get_interactivity_score(struct task_s
 
 // Example: Removing temporary printk calls left during development
 /*
-- printk(KERN_DEBUG "SCHED_TEK: Migrating task %d to NUMA node %d for balance.\n", p->pid, best_node); 
+- printk(KERN_DEBUG "SCHED_BRS: Migrating task %d to NUMA node %d for balance.\n", p->pid, best_node); 
 + // No change, logging moved to tracepoint in 0006-patch
 */
 

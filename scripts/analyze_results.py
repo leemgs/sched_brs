@@ -1,6 +1,6 @@
 import os, sys, csv, json, glob
 from statistics import mean
-from sched_tek_sim.metrics import perf_per_watt
+from sched_brs_sim.metrics import perf_per_watt
 
 def load_csv(path):
     rows = []

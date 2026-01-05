@@ -2,15 +2,15 @@
 // This patch implements safety and reliability features described in Section G (Mitigations)
 // to prevent denial-of-service (DoS) and timing side-channel attacks.
 
-#include <linux/sched_tek.h>
+#include <linux/sched_brs.h>
 #include <linux/proc_fs.h>
 
 // Max safe values (fixed-point based on paper's ranges)
-#define SCHED_TEK_ALPHA_MAX_CAP 350 // 0.35 max
-#define SCHED_TEK_BETA_MAX_CAP 300  // 0.30 max
+#define SCHED_BRS_ALPHA_MAX_CAP 350 // 0.35 max
+#define SCHED_BRS_BETA_MAX_CAP 300  // 0.30 max
 
 // Function to enforce parameter caps and safe ranges for /proc writes
-static int sched_tek_proc_write_handler(struct ctl_table *table, int write, 
+static int sched_brs_proc_write_handler(struct ctl_table *table, int write, 
                                         void __user *buffer, size_t *len, loff_t *ppos)
 {
     int ret;
@@ -25,15 +25,15 @@ static int sched_tek_proc_write_handler(struct ctl_table *table, int write,
     val = *(u32 *)table->data;
 
     if (strcmp(table->procname, "bias_alpha") == 0) {
-        if (val > SCHED_TEK_ALPHA_MAX_CAP) {
+        if (val > SCHED_BRS_ALPHA_MAX_CAP) {
             // "Writes outside safe ranges are rejected and logged"
-            printk(KERN_WARNING "SCHED_TEK: Alpha cap breach detected. Clamping to max.\n");
-            *(u32 *)table->data = SCHED_TEK_ALPHA_MAX_CAP;
+            printk(KERN_WARNING "SCHED_BRS: Alpha cap breach detected. Clamping to max.\n");
+            *(u32 *)table->data = SCHED_BRS_ALPHA_MAX_CAP;
         }
     } else if (strcmp(table->procname, "bias_beta") == 0) {
-        if (val > SCHED_TEK_BETA_MAX_CAP) {
-            printk(KERN_WARNING "SCHED_TEK: Beta cap breach detected. Clamping to max.\n");
-            *(u32 *)table->data = SCHED_TEK_BETA_MAX_CAP;
+        if (val > SCHED_BRS_BETA_MAX_CAP) {
+            printk(KERN_WARNING "SCHED_BRS: Beta cap breach detected. Clamping to max.\n");
+            *(u32 *)table->data = SCHED_BRS_BETA_MAX_CAP;
         }
     }
 
@@ -41,14 +41,14 @@ static int sched_tek_proc_write_handler(struct ctl_table *table, int write,
 }
 
 // Security Mitigation: Add bias jitter under high contention (Simplified Pseudo-code)
-static u64 sched_tek_apply_security_jitter(u64 score)
+static u64 sched_brs_apply_security_jitter(u64 score)
 {
     // "add bias jitter under high contention to reduce fingerprinting"
     
     // Check if the runqueue is under high load (contention)
-    if (unlikely(sched_tek_params.jain_index < SCHED_TEK_JAIN_MITIGATION_LEVEL)) {
+    if (unlikely(sched_brs_params.jain_index < SCHED_BRS_JAIN_MITIGATION_LEVEL)) {
         // Apply small, randomized jitter to the scheduling score
-        u64 jitter = prandom_u34() % SCHED_TEK_JITTER_MAX;
+        u64 jitter = prandom_u34() % SCHED_BRS_JITTER_MAX;
         if (score > jitter)
             score -= jitter;
         else
@@ -60,11 +60,11 @@ static u64 sched_tek_apply_security_jitter(u64 score)
 // Modify the selection function from 0003 to include jitter
 // (This would replace the old function in a real patch)
 /*
-static inline struct task_struct *sched_tek_pick_next_task(...)
+static inline struct task_struct *sched_brs_pick_next_task(...)
 {
     ...
     u64 current_score = v_i - (beta * B_i);
-    current_score = sched_tek_apply_security_jitter(current_score); // New line
+    current_score = sched_brs_apply_security_jitter(current_score); // New line
     ...
 }
 */

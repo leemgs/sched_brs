@@ -6,10 +6,10 @@ index 0000000..1111111 100644
   /* ... vanilla CFS accounting ... */
  }
  
-+/* === SCHED_TEK bounded-bias hooks (illustrative) === */
-+static u32 sched_tek_bias_alpha = 20;   /* 0..100 => 0.00..1.00 */
-+static u32 sched_tek_bias_beta  = 15;   /* 0..100 => 0.00..1.00 */
-+static u32 sched_tek_mode       = 2;    /* 0=static,1=adaptive,2=hybrid */
++/* === SCHED_BRS bounded-bias hooks (illustrative) === */
++static u32 sched_brs_bias_alpha = 20;   /* 0..100 => 0.00..1.00 */
++static u32 sched_brs_bias_beta  = 15;   /* 0..100 => 0.00..1.00 */
++static u32 sched_brs_mode       = 2;    /* 0=static,1=adaptive,2=hybrid */
 +
 +static inline u32 interactivity_score(struct sched_entity *se)
 +{
@@ -18,37 +18,37 @@ index 0000000..1111111 100644
 +    return clamp_t(u32, se->statistics.sleep_max >> 10, 0, 100);
 +}
 +
-+static void sched_tek_vruntime_bias(struct sched_entity *se, u64 *delta_exec_ns)
++static void sched_brs_vruntime_bias(struct sched_entity *se, u64 *delta_exec_ns)
 +{
 +    u32 B = interactivity_score(se);         /* 0..100 */
-+    u64 alpha = sched_tek_bias_alpha;        /* 0..100 */
++    u64 alpha = sched_brs_bias_alpha;        /* 0..100 */
 +    /* v += dt * (1 + alpha * B) with fixed-point scaling (scaled by 1e-4) */
 +    u64 scale = 10000 + alpha * B;           /* 10000..20000+ */
 +    *delta_exec_ns = div_u64(*delta_exec_ns * scale, 10000);
 +}
 +
 +/* Tie-breaker: prefer higher interactivity when vruntimes near-equal */
-+static s64 sched_tek_tiebreak_adjust(struct sched_entity *se)
++static s64 sched_brs_tiebreak_adjust(struct sched_entity *se)
 +{
 +    u32 B = interactivity_score(se);         /* 0..100 */
-+    u64 beta = sched_tek_bias_beta;          /* 0..100 */
++    u64 beta = sched_brs_bias_beta;          /* 0..100 */
 +    return -(s64)(beta * B);                 /* subtract from vruntime when close */
 +}
 +
  /* ... later in pick_next_entity() compare ... */
 - if (vruntime_left < vruntime_right)
 + if (abs(vruntime_left - vruntime_right) < vruntime_threshold) {
-+     vruntime_left  += sched_tek_tiebreak_adjust(left);
-+     vruntime_right += sched_tek_tiebreak_adjust(right);
++     vruntime_left  += sched_brs_tiebreak_adjust(left);
++     vruntime_right += sched_brs_tiebreak_adjust(right);
 + }
 + if (vruntime_left < vruntime_right)
       return left;
    else
       return right;
 @@ -999,6 +1040,18 @@ static int __init sched_init(void)
-     /* Register /proc/sys/sched_tek knobs (omitted: proper sysctl table) */
+     /* Register /proc/sys/sched_brs knobs (omitted: proper sysctl table) */
      /* bias_alpha, bias_beta, bias_mode, boost_ttl, etc. */
      return 0;
  }
  
- /* End of SCHED_TEK sketch */
+ /* End of SCHED_BRS sketch */

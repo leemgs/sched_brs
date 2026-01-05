@@ -1,27 +1,27 @@
 // File: kernel_patches/0005-sched-tek-Add-NUMA-awareness-and-load-distribution.patch
-// This patch integrates SCHED_TEK with NUMA load balancing logic 
+// This patch integrates SCHED_BRS with NUMA load balancing logic 
 // to ensure low deviation and balanced distribution across NUMA nodes, 
 // as stated in the paper's findings (less than 3.5% deviation).
 
-#include <linux/sched_tek.h>
+#include <linux/sched_brs.h>
 #include <linux/numa.h>
 #include <linux/cpumask.h>
 
 // Mock structure for NUMA-aware load tracking
-struct sched_tek_numa_state {
+struct sched_brs_numa_state {
     u64 node_load[NR_NODE_IDS]; // Load per NUMA node
     u32 deviation_pct;          // Current max load deviation percentage (scaled)
 };
 
-extern struct sched_tek_numa_state sched_tek_numa_state;
+extern struct sched_brs_numa_state sched_brs_numa_state;
 
 // Simplified function to calculate load for migration decisions
-static u64 sched_tek_calculate_node_balance_score(int src_node, int dst_node)
+static u64 sched_brs_calculate_node_balance_score(int src_node, int dst_node)
 {
-    u64 src_load = sched_tek_numa_state.node_load[src_node];
-    u64 dst_load = sched_tek_numa_state.node_load[dst_node];
+    u64 src_load = sched_brs_numa_state.node_load[src_node];
+    u64 dst_load = sched_brs_numa_state.node_load[dst_node];
     
-    // SCHED_TEK Load Balancing Metric (LBM): Simple load difference + Bias penalty
+    // SCHED_BRS Load Balancing Metric (LBM): Simple load difference + Bias penalty
     // The paper claims: LBM = |Load_src - Load_dst| + Penalty_Starvation
     u64 load_diff = (src_load > dst_load) ? (src_load - dst_load) : (dst_load - src_load);
     
@@ -35,7 +35,7 @@ static u64 sched_tek_calculate_node_balance_score(int src_node, int dst_node)
 }
 
 // Mock function replacing or hooking into the standard NUMA load balancer (e.g., balance_callback)
-static void sched_tek_numa_balance_hook(struct task_struct *p)
+static void sched_brs_numa_balance_hook(struct task_struct *p)
 {
     int current_node = task_cpu_to_node(p);
     int best_node = current_node;
@@ -43,7 +43,7 @@ static void sched_tek_numa_balance_hook(struct task_struct *p)
     
     // Find the least loaded, nearby node
     for_each_online_node(node) {
-        u64 score = sched_tek_calculate_node_balance_score(current_node, node);
+        u64 score = sched_brs_calculate_node_balance_score(current_node, node);
         
         if (score < min_score) {
             min_score = score;
@@ -52,8 +52,8 @@ static void sched_tek_numa_balance_hook(struct task_struct *p)
     }
     
     // Migrate if score is low enough and load deviation is high
-    if (best_node != current_node && sched_tek_numa_state.deviation_pct > SCHED_TEK_NUMA_DEVIATION_MAX) {
+    if (best_node != current_node && sched_brs_numa_state.deviation_pct > SCHED_BRS_NUMA_DEVIATION_MAX) {
         // trigger_migration(p, best_node); // Mock call
-        printk(KERN_DEBUG "SCHED_TEK: Migrating task %d to NUMA node %d for balance.\n", p->pid, best_node);
+        printk(KERN_DEBUG "SCHED_BRS: Migrating task %d to NUMA node %d for balance.\n", p->pid, best_node);
     }
 }

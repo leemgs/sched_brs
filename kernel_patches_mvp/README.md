@@ -8,9 +8,9 @@ SCHED\_TEK 패치 시리즈의 최종 구성을 반영하여 `README.md` 파일�
 # 📄 업데이트된 `README.md` 파일
 
 ```markdown
-# SCHED_TEK: Controlled Bias를 활용한 커널 스케줄링 재검토
+# SCHED_BRS: Controlled Bias를 활용한 커널 스케줄링 재검토
 
-**SCHED_TEK**은 응답성(responsiveness)과 공정성(fairness)을 함께 최적화하도록 설계된 Linux 커널 스케줄러 수정(패치) 세트입니다. 기존 스케줄러(CFS 등)가 이 두 목표를 상충 관계로 간주하는 것과 달리, SCHED_TEK은 커널 스케줄링 경로에 '제한된 편향(bounded bias)'을 통합하고 부하에 따라 동적으로 조정하여 낮은 꼬리 대기 시간(tail latency)과 높은 처리량을 동시에 달성합니다.
+**SCHED_BRS**은 응답성(responsiveness)과 공정성(fairness)을 함께 최적화하도록 설계된 Linux 커널 스케줄러 수정(패치) 세트입니다. 기존 스케줄러(CFS 등)가 이 두 목표를 상충 관계로 간주하는 것과 달리, SCHED_BRS은 커널 스케줄링 경로에 '제한된 편향(bounded bias)'을 통합하고 부하에 따라 동적으로 조정하여 낮은 꼬리 대기 시간(tail latency)과 높은 처리량을 동시에 달성합니다.
 
 이 저장소는 논문 "Responsiveness Is Not a Trade-Off: Revisiting Kernel Scheduling with Controlled Bias"의 재현 아티팩트입니다.
 
@@ -42,8 +42,8 @@ sched\_tek\_artifact/
 
 | 파일 번호 | 파일명 | 주요 역할 |
 | :--- | :--- | :--- |
-| **0000** | `0000-sched-Enable-SCHED_TEK-build-and-Kconfig.patch` | 빌드 시스템 설정 및 SCHED\_TEK 활성화 |
-| **0001** | `0001-sched-Introduce-SCHED_TEK-framework.patch` | 기본 데이터 구조 및 초기화 프레임워크 도입 |
+| **0000** | `0000-sched-Enable-SCHED_BRS-build-and-Kconfig.patch` | 빌드 시스템 설정 및 SCHED\_TEK 활성화 |
+| **0001** | `0001-sched-Introduce-SCHED_BRS-framework.patch` | 기본 데이터 구조 및 초기화 프레임워크 도입 |
 | **0002** | `0002-sched-tek-Implement-vruntime-biasing.patch` | **핵심 기능:** vruntime 편향 엔진 구현 |
 | **0003** | `0003-sched-tek-Add-hybrid-controller-and-proc-interface.patch` | **핵심 기능:** 동적 제어기 및 태스크 선택 로직 |
 | **0004** | `0004-sched-tek-Add-mitigations-and-security-guardrails.patch` | 안정성 및 보안 완화(Mitigations) 로직 추가 |
@@ -59,7 +59,7 @@ sched\_tek\_artifact/
     ```bash
     cd <LINUX_KERNEL_SOURCE>
     # 8개 패치를 순서대로 적용
-    patch -p1 < path/to/sched_tek_artifact/kernel_patches/000*.patch
+    patch -p1 < path/to/sched_brs_artifact/kernel_patches/000*.patch
     ```
 3.  **커널 빌드 및 설치:** 패치된 커널을 빌드하고 부팅합니다.
 4.  **실험 실행:**

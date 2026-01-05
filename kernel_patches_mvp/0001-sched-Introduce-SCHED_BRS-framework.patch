@@ -1,16 +1,16 @@
-// File: kernel_patches/0001-sched-Introduce-SCHED_TEK-framework.patch
+// File: kernel_patches/0001-sched-Introduce-SCHED_BRS-framework.patch
 // This patch introduces the basic data structures and initialization routines
-// for the SCHED_TEK scheduler framework, typically applied to files like 
-// include/linux/sched.h, include/linux/sched_tek.h, and kernel/sched/core.c.
+// for the SCHED_BRS scheduler framework, typically applied to files like 
+// include/linux/sched.h, include/linux/sched_brs.h, and kernel/sched/core.c.
 
 #include <linux/types.h>
 #include <linux/spinlock.h>
 #include <linux/task_struct.h>
 
-// --- A. include/linux/sched_tek.h (Mock Header) ---
+// --- A. include/linux/sched_brs.h (Mock Header) ---
 
-// SCHED_TEK State Structure
-struct sched_tek_state {
+// SCHED_BRS State Structure
+struct sched_brs_state {
     // Controller parameters (defaults based on paper's findings)
     u32 bias_alpha;  // Default: 0.20 (200 in fixed-point)
     u32 bias_beta;   // Default: 0.15 (150 in fixed-point)
@@ -29,27 +29,27 @@ struct sched_tek_state {
     raw_spinlock_t lock; 
 };
 
-extern struct sched_tek_state sched_tek_params;
+extern struct sched_brs_state sched_brs_params;
 
-// --- B. kernel/sched/sched_tek_core.c (Mock Initialization) ---
+// --- B. kernel/sched/sched_brs_core.c (Mock Initialization) ---
 
 // Define and initialize global parameters
-struct sched_tek_state sched_tek_params = {
+struct sched_brs_state sched_brs_params = {
     .bias_alpha = 200, 
     .bias_beta = 150,
     .bias_mode = 2,
     .jain_min_threshold = 960, // 0.96 * 1000
     .starvation_max_threshold = 20, // 2% 
-    .lock = __RAW_SPIN_LOCK_UNLOCKED(sched_tek_params.lock),
+    .lock = __RAW_SPIN_LOCK_UNLOCKED(sched_brs_params.lock),
 };
 
-// Function to initialize SCHED_TEK upon boot
-int __init sched_tek_init(void)
+// Function to initialize SCHED_BRS upon boot
+int __init sched_brs_init(void)
 {
     // 1. Initialize per-CPU data structures (if necessary)
     // 2. Register the periodic timer for the hybrid controller 
     //    (Implementation details in 0003-patch)
-    printk(KERN_INFO "SCHED_TEK: Controlled Bias Scheduler framework initialized (Mode: Hybrid).\n");
+    printk(KERN_INFO "SCHED_BRS: Controlled Bias Scheduler framework initialized (Mode: Hybrid).\n");
     return 0;
 }
-core_initcall(sched_tek_init);
+core_initcall(sched_brs_init);

@@ -1,0 +1,54 @@
+// File: kernel_patches/0000-sched-Enable-SCHED_BRS-build-and-Kconfig.patch
+// This patch sets up the build environment for SCHED_BRS by modifying
+// Kconfig and Makefiles, and defining the main scheduler switch.
+//
+// Target files: kernel/sched/Kconfig, kernel/sched/Makefile, include/linux/sched.h
+
+// --- A. kernel/sched/Kconfig modification (Pseudo-code) ---
+
+config SCHED_BRS
+    bool "SCHED_BRS: Controlled Bias Scheduler"
+    depends on EXPERIMENTAL && SMP
+    default y
+    help
+      This option enables the SCHED_BRS scheduler.
+      SCHED_BRS introduces a controlled bias mechanism to CFS 
+      to optimize both latency (responsiveness) and fairness.
+
+config DEFAULT_SCHED
+    string
+    default "SCHED_BRS" if SCHED_BRS
+    default "CFS" if DEFAULT_CFS
+
+// --- B. kernel/sched/Makefile modification (Pseudo-code) ---
+
+# Append SCHED_BRS source file to the build list
+ifdef CONFIG_SCHED_BRS
+  obj-y += sched_brs_core.o
+endif
+
+# Ensure sched_brs_core.o is built if the option is selected
+obj-$(CONFIG_SCHED_BRS) += sched_brs_core.o 
+obj-$(CONFIG_SCHED_BRS) += sched_brs_proc.o 
+
+# --- C. include/linux/sched.h modification (Pseudo-code for Scheduler Switch) ---
+
+// Define the main scheduler function prototype
+#ifdef CONFIG_SCHED_BRS
+extern void sched_brs_init(void);
+extern struct task_struct *sched_brs_pick_next_task(struct rq *rq);
+#define __SCHED_BRS_INIT() sched_brs_init()
+#define __SCHED_BRS_PICK_NEXT_TASK(rq) sched_brs_pick_next_task(rq)
+#else
+#define __SCHED_BRS_INIT() 
+#define __SCHED_BRS_PICK_NEXT_TASK(rq) NULL
+#endif
+
+// The kernel calls this entry point (e.g., in kernel/sched/core.c)
+#ifdef CONFIG_SCHED_BRS
+  #define INIT_SCHEDULER() __SCHED_BRS_INIT()
+  #define PICK_NEXT_TASK(rq) __SCHED_BRS_PICK_NEXT_TASK(rq)
+#elif defined(CONFIG_DEFAULT_CFS)
+  #define INIT_SCHEDULER() cfs_init()
+  // ... and so on for CFS
+#endif

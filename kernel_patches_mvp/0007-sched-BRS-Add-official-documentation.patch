@@ -1,5 +1,5 @@
 // File: kernel_patches/0007-sched-tek-Add-official-documentation.patch
-// This patch finalizes the SCHED_TEK series by adding official documentation 
+// This patch finalizes the SCHED_BRS series by adding official documentation 
 // for the new scheduler, explaining its principles and tunable parameters.
 
 // --- A. Documentation/scheduler/sched-tek.rst (New File Content) ---
@@ -7,18 +7,18 @@
 .. Documentation/scheduler/sched-tek.rst
 
 =======================================================
-SCHED_TEK: The Controlled Bias Scheduler
+SCHED_BRS: The Controlled Bias Scheduler
 =======================================================
 
 :Author: Anonymous Authors
 :Date: 2025-10-01
 
-SCHED_TEK challenges the conventional trade-off between scheduling responsiveness and fairness by introducing a **Controlled Bias** mechanism directly into the kernel's Completely Fair Scheduler (CFS) path. It uses dynamic feedback loops to adapt this bias under high contention, ensuring low tail latency (P95) without violating fairness guarantees (Jain's Index > 0.96).
+SCHED_BRS challenges the conventional trade-off between scheduling responsiveness and fairness by introducing a **Controlled Bias** mechanism directly into the kernel's Completely Fair Scheduler (CFS) path. It uses dynamic feedback loops to adapt this bias under high contention, ensuring low tail latency (P95) without violating fairness guarantees (Jain's Index > 0.96).
 
 1. Core Principle: Bounded Bias
 --------------------------------
 
-SCHED_TEK preferentially lowers the **vruntime** of interactive, latency-sensitive tasks based on their interactivity score (**B_i**). The degree of preference is controlled by the global **alpha (α)** coefficient.
+SCHED_BRS preferentially lowers the **vruntime** of interactive, latency-sensitive tasks based on their interactivity score (**B_i**). The degree of preference is controlled by the global **alpha (α)** coefficient.
 
 The vruntime update for a task is modified as:
 
@@ -26,7 +26,7 @@ The vruntime update for a task is modified as:
 
 This bias is "bounded" by the **Hybrid Controller**, which continuously monitors system-wide fairness and starvation metrics and auto-dampens α and β when necessary.
 
-2. Tunable Parameters (/proc/sys/sched_tek/)
+2. Tunable Parameters (/proc/sys/sched_brs/)
 -----------------------------------------------
 
 The scheduler exposes several knobs for advanced tuning and experimental validation.
@@ -56,5 +56,5 @@ The scheduler exposes several knobs for advanced tuning and experimental validat
 
 // --- B. Documentation/scheduler/Makefile modification (Pseudo-code) ---
 
-# Append SCHED_TEK documentation to the build list
-obj-$(CONFIG_SCHED_TEK) += sched-tek.rst
+# Append SCHED_BRS documentation to the build list
+obj-$(CONFIG_SCHED_BRS) += sched-tek.rst

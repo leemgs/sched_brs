@@ -1,12 +1,12 @@
 // File: kernel_patches/0003-sched-tek-Add-hybrid-controller-and-proc-interface.patch
 // This is a mock Linux kernel patch snippet showing the selection logic and hybrid control.
 
-#include <linux/sched_tek.h>
+#include <linux/sched_brs.h>
 #include <linux/proc_fs.h>
 #include <linux/task_struct.h>
 
 // Mock structure to hold parameters and stats
-struct sched_tek_state {
+struct sched_brs_state {
     u32 bias_alpha; 
     u32 bias_beta;  
     u32 bias_mode;  
@@ -15,23 +15,23 @@ struct sched_tek_state {
     u64 p95_latency; // Mock telemetry
 };
 
-extern struct sched_tek_state sched_tek_state;
-extern u64 sched_tek_get_interactivity_score(struct task_struct *curr);
+extern struct sched_brs_state sched_brs_state;
+extern u64 sched_brs_get_interactivity_score(struct task_struct *curr);
 
 // Mock function for the selection tie-breaker logic
-static inline struct task_struct *sched_tek_pick_next_task(struct run_queue *rq)
+static inline struct task_struct *sched_brs_pick_next_task(struct run_queue *rq)
 {
     struct task_struct *best_task = NULL;
     u64 best_score = (u64)-1;
 
-    u64 beta = sched_tek_state.bias_beta; // Amplification factor
+    u64 beta = sched_brs_state.bias_beta; // Amplification factor
 
     // Iterate over tasks in the runqueue (simplified)
     list_for_each_entry(task, &rq->tasks, run_list) { // Assume rq is defined
         u64 v_i = task->se.vruntime;
-        u64 B_i = sched_tek_get_interactivity_score(task);
+        u64 B_i = sched_brs_get_interactivity_score(task);
 
-        // SCHED_TEK runqueue selection: tie-breaker integrated
+        // SCHED_BRS runqueue selection: tie-breaker integrated
         // pick_next_task = argmin_i (v_i - β * B_i)
         u64 current_score = v_i - (beta * B_i);
 
@@ -44,29 +44,29 @@ static inline struct task_struct *sched_tek_pick_next_task(struct run_queue *rq)
 }
 
 // Mock function for the Hybrid Adaptation Controller (executed periodically)
-static void sched_tek_hybrid_controller_periodic(void)
+static void sched_brs_hybrid_controller_periodic(void)
 {
-    u32 J = sched_tek_state.jain_index;
-    u32 S = sched_tek_state.starvation_rate;
+    u32 J = sched_brs_state.jain_index;
+    u32 S = sched_brs_state.starvation_rate;
     
     // Read bounds and thresholds
     const u32 J_min = 0.96 * 1000; // 0.96 scaled
     const u32 S_max = 2 * 1000;    // 2% scaled
     
     // Adaptation logic (simplified pseudo-code from paper)
-    if (sched_tek_state.bias_mode != 2) // 2: hybrid
+    if (sched_brs_state.bias_mode != 2) // 2: hybrid
         return;
 
     if (J < J_min || S > S_max) {
         // Fairness or starvation breach: Reduce bias (dampening)
         // alpha = max(alpha_min, alpha - delta_a)
         // beta = max(beta_min, beta - delta_b)
-        sched_tek_state.bias_alpha = max(SCHED_TEK_ALPHA_MIN, sched_tek_state.bias_alpha - SCHED_TEK_DELTA_A);
-        sched_tek_state.bias_beta = max(SCHED_TEK_BETA_MIN, sched_tek_state.bias_beta - SCHED_TEK_DELTA_B);
+        sched_brs_state.bias_alpha = max(SCHED_BRS_ALPHA_MIN, sched_brs_state.bias_alpha - SCHED_BRS_DELTA_A);
+        sched_brs_state.bias_beta = max(SCHED_BRS_BETA_MIN, sched_brs_state.bias_beta - SCHED_BRS_DELTA_B);
     } 
     // Simplified bias increase logic
-    else if (J > 0.98 * 1000 && sched_tek_state.p95_latency > SCHED_TEK_TARGET_LATENCY) {
+    else if (J > 0.98 * 1000 && sched_brs_state.p95_latency > SCHED_BRS_TARGET_LATENCY) {
         // alpha = min(alpha_max, alpha + delta_a)
-        sched_tek_state.bias_alpha = min(SCHED_TEK_ALPHA_MAX, sched_tek_state.bias_alpha + SCHED_TEK_DELTA_A);
+        sched_brs_state.bias_alpha = min(SCHED_BRS_ALPHA_MAX, sched_brs_state.bias_alpha + SCHED_BRS_DELTA_A);
     }
 }

@@ -1,16 +1,16 @@
 // File: kernel_patches/0006-sched-tek-Add-tracing-and-debug-interfaces.patch
 // This final patch adds necessary tracepoints and debug hooks to allow external 
-// analysis tools (like trace-cmd, ftrace, or eBPF) to monitor SCHED_TEK's behavior, 
+// analysis tools (like trace-cmd, ftrace, or eBPF) to monitor SCHED_BRS's behavior, 
 // ensuring the reproducibility of the paper's findings.
 
 #include <linux/tracepoint.h>
-#include <linux/sched_tek.h>
+#include <linux/sched_brs.h>
 #include <linux/debugfs.h>
 
-// --- A. Define SCHED_TEK Tracepoints (Pseudo-code) ---
+// --- A. Define SCHED_BRS Tracepoints (Pseudo-code) ---
 
 // Tracepoint 1: Log when the Hybrid Controller changes bias parameters
-TRACE_EVENT(sched_tek_bias_update,
+TRACE_EVENT(sched_brs_bias_update,
     TP_PROTO(u32 old_alpha, u32 new_alpha, u32 old_beta, u32 new_beta, u32 jain_index),
     TP_ARGS(old_alpha, new_alpha, old_beta, new_beta, jain_index),
     TP_STRUCT__entry(
@@ -32,7 +32,7 @@ TRACE_EVENT(sched_tek_bias_update,
 );
 
 // Tracepoint 2: Log the effective vruntime delta bias for a task
-TRACE_EVENT(sched_tek_vruntime_bias,
+TRACE_EVENT(sched_brs_vruntime_bias,
     TP_PROTO(pid_t pid, u64 delta_exec, u64 bias_term),
     TP_ARGS(pid, delta_exec, bias_term),
     TP_STRUCT__entry(
@@ -54,13 +54,13 @@ TRACE_EVENT(sched_tek_vruntime_bias,
 
 // 1. Hook into 0003-patch's controller function
 /*
-static void sched_tek_hybrid_controller_periodic(void)
+static void sched_brs_hybrid_controller_periodic(void)
 {
     // ... existing logic to calculate new_alpha and new_beta ...
     
     if (new_alpha != old_alpha || new_beta != old_beta) {
         // Trigger the tracepoint on change
-        trace_sched_tek_bias_update(old_alpha, new_alpha, old_beta, new_beta, sched_tek_state.jain_index);
+        trace_sched_brs_bias_update(old_alpha, new_alpha, old_beta, new_beta, sched_brs_state.jain_index);
         // ... apply changes ...
     }
 }
@@ -68,13 +68,13 @@ static void sched_tek_hybrid_controller_periodic(void)
 
 // 2. Hook into 0002-patch's vruntime update
 /*
-static inline void sched_tek_update_vruntime(struct task_struct *curr, u66 delta_exec)
+static inline void sched_brs_update_vruntime(struct task_struct *curr, u66 delta_exec)
 {
     // ... existing logic to calculate biased_delta_vruntime ...
     
     u64 effective_bias = biased_delta_vruntime - delta_exec; 
 
-    trace_sched_tek_vruntime_bias(curr->pid, delta_exec, effective_bias);
+    trace_sched_brs_vruntime_bias(curr->pid, delta_exec, effective_bias);
 
     // ... apply the update ...
 }
@@ -82,20 +82,20 @@ static inline void sched_tek_update_vruntime(struct task_struct *curr, u66 delta
 
 // --- C. Add Debugfs interface for one-off monitoring (Pseudo-code) ---
 
-// This would expose scheduler runtime stats to /sys/kernel/debug/sched_tek/
-static int __init sched_tek_debugfs_init(void)
+// This would expose scheduler runtime stats to /sys/kernel/debug/sched_brs/
+static int __init sched_brs_debugfs_init(void)
 {
     struct dentry *dir;
-    dir = debugfs_create_dir("sched_tek", NULL);
+    dir = debugfs_create_dir("sched_brs", NULL);
     if (!dir)
         return -ENOMEM;
 
     // Expose current P95 latency metric
-    debugfs_create_u64("p95_latency_ns", 0444, dir, &sched_tek_params.p95_latency);
+    debugfs_create_u64("p95_latency_ns", 0444, dir, &sched_brs_params.p95_latency);
     
     // Expose current Starvation Rate
-    debugfs_create_u32("starvation_rate_mille", 0444, dir, &sched_tek_params.starvation_rate);
+    debugfs_create_u32("starvation_rate_mille", 0444, dir, &sched_brs_params.starvation_rate);
 
     return 0;
 }
-late_initcall(sched_tek_debugfs_init);
+late_initcall(sched_brs_debugfs_init);

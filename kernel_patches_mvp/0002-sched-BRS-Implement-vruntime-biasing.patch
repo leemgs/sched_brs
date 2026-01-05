@@ -3,30 +3,30 @@
 // It applies to kernel/sched/fair.c's update_curr() function or similar.
 
 #include <linux/sched.h>
-#include <linux/sched_tek.h> // Mock header for SCHED_TEK constants and state
+#include <linux/sched_brs.h> // Mock header for SCHED_BRS constants and state
 
 // Pseudo-code function to calculate the interactivity score B_i [0, 1]
-static inline u64 sched_tek_get_interactivity_score(struct task_struct *curr)
+static inline u64 sched_brs_get_interactivity_score(struct task_struct *curr)
 {
     // B_i is derived from sleep duration, I/O wait ratio, and scheduling history.
     u64 latency_ns = curr->sched_info.p95_latency; // Mock field
-    u64 B_i_fixed = (latency_ns < SCHED_TEK_LATENCY_THRESHOLD) ? 1024 : 0; 
+    u64 B_i_fixed = (latency_ns < SCHED_BRS_LATENCY_THRESHOLD) ? 1024 : 0; 
     return B_i_fixed / 1024.0; // Return a float/fixed-point value [0, 1]
 }
 
 // Mock function replacing or modifying update_curr_fair() logic
-static inline void sched_tek_update_vruntime(struct task_struct *curr, u66 delta_exec)
+static inline void sched_brs_update_vruntime(struct task_struct *curr, u66 delta_exec)
 {
     u64 vruntime_mock = curr->se.vruntime;
     u64 delta_t = delta_exec; // elapsed CPU time
 
     // Read global bias coefficient alpha
-    u64 alpha = sched_tek_params.bias_alpha;
+    u64 alpha = sched_brs_params.bias_alpha;
 
     // Calculate interactivity score B_i
-    u64 B_i = sched_tek_get_interactivity_score(curr); // B_i is in [0, 1]
+    u64 B_i = sched_brs_get_interactivity_score(curr); // B_i is in [0, 1]
 
-    // SCHED_TEK vruntime biasing formula (non-linear scaling term)
+    // SCHED_BRS vruntime biasing formula (non-linear scaling term)
     // vruntime = vruntime + Δt * (1 + α * B_i)
     u64 biased_delta_vruntime = delta_t * (1 + alpha * B_i);
 
@@ -35,6 +35,6 @@ static inline void sched_tek_update_vruntime(struct task_struct *curr, u66 delta
     curr->se.vruntime = vruntime_mock;
 
     // Safety: Enforce fairness floor (starvation avoidance)
-    if (unlikely(vruntime_mock > sched_tek_params.min_vruntime + SCHED_TEK_STARVATION_CAP))
-        vruntime_mock = sched_tek_params.min_vruntime; // Simplified vruntime boost
+    if (unlikely(vruntime_mock > sched_brs_params.min_vruntime + SCHED_BRS_STARVATION_CAP))
+        vruntime_mock = sched_brs_params.min_vruntime; // Simplified vruntime boost
 }

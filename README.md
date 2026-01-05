@@ -3,7 +3,7 @@
   <img src="brs_logo01.png" alt="BRS Logo" width="300"/>
 </p>
 
-This repository contains a faithful, **runnable simulator**, benchmark harness, and analysis scripts that reproduce the core findings and figures logic from the SCHED_TEK paper. It also ships a placeholder kernel patch showing how the bias hooks are integrated; you can replace it with your production patch when ready.
+This repository contains a faithful, **runnable simulator**, benchmark harness, and analysis scripts that reproduce the core findings and figures logic from the SCHED_BRS paper. It also ships a placeholder kernel patch showing how the bias hooks are integrated; you can replace it with your production patch when ready.
 
 * Out-of-date name: SCHED_TEK
 * State-of-the-art name: SCHED_BRS
@@ -33,8 +33,8 @@ python scripts/analyze_results.py --input results --out results/summary.json
 You should see per-workload improvements (P95 ↓, starvation kept low, fairness ≥ 0.96 in hybrid mode), consistent with the paper’s narrative. Exact numbers will differ from kernel measurements but follow the same trends. fileciteturn0file0
 
 ## Using the kernel patch sketch
-- `kernel_patches/sched_tek.patch` shows where vruntime scaling and a tie‑breaker can be added inside `kernel/sched/fair.c` (illustrative diff).
-- It also sketches a `/proc/sys/sched_tek/*` interface (`bias_alpha`, `bias_beta`, `bias_mode`, TTL/boost knobs).
+- `kernel_patches/sched_brs.patch` shows where vruntime scaling and a tie‑breaker can be added inside `kernel/sched/fair.c` (illustrative diff).
+- It also sketches a `/proc/sys/sched_brs/*` interface (`bias_alpha`, `bias_beta`, `bias_mode`, TTL/boost knobs).
 - Replace the sketch with your real patch when ready; the repo structure matches the paper’s artifact layout for easy swap‑in. fileciteturn0file0
 
 ## Reproducing figures/tables logic
@@ -47,16 +47,16 @@ This regenerates:
 - P95 latency deltas vs. a “CFS-like” policy (sim baseline) and a BFS‑like policy (less fairness). 
 - Jain’s index, starvation %, and perf/watt proxies (work-normalized throughput per joule unit).
 
-The simulator encodes SCHED_TEK’s hybrid controller and bounded bias consistent with the paper’s pseudocode and playbook defaults (α=0.20, β=0.15; J_min=0.96; starvation cap 2%). fileciteturn0file0
+The simulator encodes SCHED_BRS’s hybrid controller and bounded bias consistent with the paper’s pseudocode and playbook defaults (α=0.20, β=0.15; J_min=0.96; starvation cap 2%). fileciteturn0file0
 
 ## Folder structure
 ```
-sched_tek_artifact/
+sched_brs_artifact/
 ├─ README.md
 ├─ LICENSE.md
 ├─ kernel_patches/
-│  └─ sched_tek.patch
-├─ sched_tek_sim/
+│  └─ sched_brs.patch
+├─ sched_brs_sim/
 │  ├─ __init__.py
 │  ├─ scheduler.py
 │  ├─ workloads.py
