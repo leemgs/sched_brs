@@ -1,4 +1,4 @@
-// File: kernel_patches/0001-sched-Introduce-SCHED_BRS-framework.patch
+// File: kernel_patches_mvp/0001-sched-Introduce-SCHED_BRS-framework.patch
 // This patch introduces the basic data structures and initialization routines
 // for the SCHED_BRS scheduler framework, typically applied to files like 
 // include/linux/sched.h, include/linux/sched_brs.h, and kernel/sched/core.c.

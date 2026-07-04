@@ -10,5 +10,6 @@ $PY benchmarks/gaming.py
 $PY benchmarks/ai_inference.py
 $PY benchmarks/data_analytics.py
 $PY benchmarks/streaming.py
+$PY benchmarks/adversarial.py
 
 echo "[OK] All benchmarks finished. See results/ for CSVs."

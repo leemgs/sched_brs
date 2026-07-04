@@ -1,4 +1,4 @@
-// File: kernel_patches/0008-sched-tek-Final-cleanup-and-series-submission-note.patch
+// File: kernel_patches_mvp/0008-sched-brs-Final-cleanup-and-series-submission-note.patch
 // This patch performs final trivial cleanups across the SCHED_BRS series, 
 // ensuring adherence to coding standards, and serves as the final submission patch 
 // for the entire [01/08] to [08/08] series.
@@ -26,7 +26,7 @@ static inline __maybe_unused u64 sched_brs_get_interactivity_score(struct task_s
 
 // --- B. Documentation Finalization (Ensuring build works with Sphinx) ---
 
-// Trivial changes to fix warnings in Documentation/scheduler/sched-tek.rst 
+// Trivial changes to fix warnings in Documentation/scheduler/sched-brs.rst 
 // (e.g., fixing incorrect reStructuredText markup).
 
 // --- C. Makefile FINAL Cleanup ---

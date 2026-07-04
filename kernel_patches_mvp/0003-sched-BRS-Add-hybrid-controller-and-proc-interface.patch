@@ -1,4 +1,4 @@
-// File: kernel_patches/0003-sched-tek-Add-hybrid-controller-and-proc-interface.patch
+// File: kernel_patches_mvp/0003-sched-brs-Add-hybrid-controller-and-proc-interface.patch
 // This is a mock Linux kernel patch snippet showing the selection logic and hybrid control.
 
 #include <linux/sched_brs.h>
@@ -22,7 +22,7 @@ extern u64 sched_brs_get_interactivity_score(struct task_struct *curr);
 static inline struct task_struct *sched_brs_pick_next_task(struct run_queue *rq)
 {
     struct task_struct *best_task = NULL;
-    u64 best_score = (u64)-1;
+    s64 best_score = S64_MAX;
 
     u64 beta = sched_brs_state.bias_beta; // Amplification factor
 
@@ -31,9 +31,10 @@ static inline struct task_struct *sched_brs_pick_next_task(struct run_queue *rq)
         u64 v_i = task->se.vruntime;
         u64 B_i = sched_brs_get_interactivity_score(task);
 
-        // SCHED_BRS runqueue selection: tie-breaker integrated
-        // pick_next_task = argmin_i (v_i - β * B_i)
-        u64 current_score = v_i - (beta * B_i);
+        // SCHED_BRS runqueue selection: tie-breaker integrated (Sec IV-D).
+        // pick_next_task = argmin_i (v_i - beta * B_i); signed to avoid
+        // unsigned underflow when beta*B_i exceeds a small vruntime.
+        s64 current_score = (s64)v_i - (s64)(beta * B_i);
 
         if (current_score < best_score) {
             best_score = current_score;
@@ -48,25 +49,27 @@ static void sched_brs_hybrid_controller_periodic(void)
 {
     u32 J = sched_brs_state.jain_index;
     u32 S = sched_brs_state.starvation_rate;
-    
-    // Read bounds and thresholds
-    const u32 J_min = 0.96 * 1000; // 0.96 scaled
-    const u32 S_max = 2 * 1000;    // 2% scaled
-    
-    // Adaptation logic (simplified pseudo-code from paper)
+
+    // Integer thresholds (kernel hot path must not use floating point).
+    // J is scaled by 1000; S (rate) scaled by 1000 (2% -> 20).
+    const u32 J_min = 960; // 0.96
+    const u32 J_max = 970; // 0.97
+    const u32 S_max = 20;  // 2.0%
+
     if (sched_brs_state.bias_mode != 2) // 2: hybrid
         return;
 
+    // Algorithm 1, Phase 3 (bang-bang damp / promote), projected onto the
+    // Table I safe box C = [alpha_min,alpha_max] x [beta_min,beta_max].
     if (J < J_min || S > S_max) {
-        // Fairness or starvation breach: Reduce bias (dampening)
-        // alpha = max(alpha_min, alpha - delta_a)
-        // beta = max(beta_min, beta - delta_b)
+        // Damp: fairness or starvation breach -> restore fairness.
         sched_brs_state.bias_alpha = max(SCHED_BRS_ALPHA_MIN, sched_brs_state.bias_alpha - SCHED_BRS_DELTA_A);
-        sched_brs_state.bias_beta = max(SCHED_BRS_BETA_MIN, sched_brs_state.bias_beta - SCHED_BRS_DELTA_B);
-    } 
-    // Simplified bias increase logic
-    else if (J > 0.98 * 1000 && sched_brs_state.p95_latency > SCHED_BRS_TARGET_LATENCY) {
-        // alpha = min(alpha_max, alpha + delta_a)
+        sched_brs_state.bias_beta  = max(SCHED_BRS_BETA_MIN,  sched_brs_state.bias_beta  - SCHED_BRS_DELTA_B);
+    }
+    else if (J > J_max && sched_brs_state.p95_latency > SCHED_BRS_TARGET_LATENCY) {
+        // Promote: fairness has margin and latency still exceeds target ->
+        // cut latency by raising both alpha and beta (Algorithm 1 line 13).
         sched_brs_state.bias_alpha = min(SCHED_BRS_ALPHA_MAX, sched_brs_state.bias_alpha + SCHED_BRS_DELTA_A);
+        sched_brs_state.bias_beta  = min(SCHED_BRS_BETA_MAX,  sched_brs_state.bias_beta  + SCHED_BRS_DELTA_B);
     }
 }

@@ -1,40 +1,72 @@
-// File: kernel_patches/0002-sched-tek-Implement-vruntime-biasing.patch
-// This is a mock Linux kernel patch snippet showing the core vruntime modification.
-// It applies to kernel/sched/fair.c's update_curr() function or similar.
+// File: kernel_patches_mvp/0002-sched-BRS-Implement-vruntime-biasing.patch
+// Mock Linux kernel patch snippet showing the core vruntime modification.
+// It applies to kernel/sched/fair.c's update_curr() / pick_next path.
+//
+// All arithmetic is integer fixed-point (Q10: value/1024 == 1.0); the kernel
+// hot path must not use floating point.
 
 #include <linux/sched.h>
 #include <linux/sched_brs.h> // Mock header for SCHED_BRS constants and state
 
-// Pseudo-code function to calculate the interactivity score B_i [0, 1]
-static inline u64 sched_brs_get_interactivity_score(struct task_struct *curr)
+#define BRS_FP_SHIFT   10
+#define BRS_FP_ONE     (1u << BRS_FP_SHIFT)          // 1024 == 1.0
+
+// Interactivity score B_i in Q10 fixed-point [0, BRS_FP_ONE], per Section IV-C:
+//   B~ = lambda1*s + lambda2*w + lambda3*h   (defaults 0.5, 0.3, 0.2)
+// with s = sleep ratio, w = I/O-wait ratio, h = min(1, nwake/nwake_ref) over a
+// sliding window of the last W scheduling events (default W = 64); the value
+// used is the EWMA  B <- (1-rho)B + rho*B~  with rho = 0.25.  All three raw
+// signals already exist in se.statistics / task_struct I/O accounting.
+static inline u32 sched_brs_get_interactivity_score(struct task_struct *curr)
 {
-    // B_i is derived from sleep duration, I/O wait ratio, and scheduling history.
-    u64 latency_ns = curr->sched_info.p95_latency; // Mock field
-    u64 B_i_fixed = (latency_ns < SCHED_BRS_LATENCY_THRESHOLD) ? 1024 : 0; 
-    return B_i_fixed / 1024.0; // Return a float/fixed-point value [0, 1]
+    u32 s = brs_sleep_ratio_q10(curr);      // [0, 1024]
+    u32 w = brs_iowait_ratio_q10(curr);     // [0, 1024]
+    u32 h = brs_wake_history_q10(curr);     // [0, 1024], min(1, nwake/nwake_ref)
+
+    // Convex combination lambda = (0.5, 0.3, 0.2), kept in Q10.
+    u32 inst = (512u * s + 307u * w + 205u * h) >> BRS_FP_SHIFT;
+
+    // EWMA with rho = 0.25 == 1/4:  B = (3*B + inst) / 4.
+    curr->se.brs_B = (3u * curr->se.brs_B + inst) >> 2;
+    return min_t(u32, curr->se.brs_B, BRS_FP_ONE);
 }
 
-// Mock function replacing or modifying update_curr_fair() logic
-static inline void sched_brs_update_vruntime(struct task_struct *curr, u66 delta_exec)
+// Mock function modifying update_curr_fair() logic (Algorithm 1, Phase 1).
+static inline void sched_brs_update_vruntime(struct task_struct *curr, u64 delta_exec)
 {
-    u64 vruntime_mock = curr->se.vruntime;
-    u64 delta_t = delta_exec; // elapsed CPU time
+    u64 delta_t = delta_exec;                        // elapsed CPU time (ns)
 
-    // Read global bias coefficient alpha
-    u64 alpha = sched_brs_params.bias_alpha;
+    // Global bias coefficient alpha in Q10, clamped to the Table I safe range
+    // [0.10, 0.35] == [102, 358] in Q10.
+    u32 alpha = clamp_t(u32, sched_brs_params.bias_alpha_q10, 102u, 358u);
 
-    // Calculate interactivity score B_i
-    u64 B_i = sched_brs_get_interactivity_score(curr); // B_i is in [0, 1]
+    // Interactivity score B_i in Q10 [0, 1024].
+    u32 B_i = sched_brs_get_interactivity_score(curr);
 
-    // SCHED_BRS vruntime biasing formula (non-linear scaling term)
-    // vruntime = vruntime + Δt * (1 + α * B_i)
-    u64 biased_delta_vruntime = delta_t * (1 + alpha * B_i);
+    // Eq. (2):  vruntime += delta_t * (1 - alpha * B_i).
+    //   prod  = alpha * B_i           (Q10, == alpha*B in [0, 1])
+    //   scale = 1 - alpha*B_i         (Q10, in [1 - alpha_max, 1] = [666,1024])
+    // scale is strictly positive (Lemma 1), so vruntime stays monotone and the
+    // sign of progress never reverses; and (1-alpha_max)*dt <= dv <= dt is the
+    // bounded-bias guarantee of Definition 1 -- no extra clamp is required.
+    u32 prod  = (u32)(((u64)alpha * B_i) >> BRS_FP_SHIFT);   // [0, 358]
+    u32 scale = BRS_FP_ONE - prod;                          // [666, 1024]
+    u64 biased_delta_vruntime = (delta_t * scale) >> BRS_FP_SHIFT;
 
-    // Apply the update
-    vruntime_mock += biased_delta_vruntime;
-    curr->se.vruntime = vruntime_mock;
+    curr->se.vruntime += biased_delta_vruntime;
 
-    // Safety: Enforce fairness floor (starvation avoidance)
-    if (unlikely(vruntime_mock > sched_brs_params.min_vruntime + SCHED_BRS_STARVATION_CAP))
-        vruntime_mock = sched_brs_params.min_vruntime; // Simplified vruntime boost
+    // NB: absolute starvation is bounded separately by the aging guardrail
+    // (Sec IV-F) enforced at pick time in patch 0004, which force-promotes any
+    // runnable task whose undispatched wait exceeds S_max (100 ms). It is *not*
+    // a vruntime clamp here: interactive tasks are meant to lead in vruntime.
+}
+
+// Tie-breaker (Section IV-D, Algorithm 1 Phase 2), used at pick time:
+//   pick_next = arg min_i (vruntime_i - beta * B_i).
+static inline s64 sched_brs_tiebreak_key(struct task_struct *t)
+{
+    u32 beta = clamp_t(u32, sched_brs_params.bias_beta_q10, 51u, 307u); // [0.05,0.30]
+    u32 B_i  = sched_brs_get_interactivity_score(t);
+    s64 adj  = (s64)(((u64)beta * B_i) >> BRS_FP_SHIFT);
+    return (s64)t->se.vruntime - adj;
 }

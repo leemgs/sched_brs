@@ -1,4 +1,4 @@
-// File: kernel_patches/0006-sched-tek-Add-tracing-and-debug-interfaces.patch
+// File: kernel_patches_mvp/0006-sched-brs-Add-tracing-and-debug-interfaces.patch
 // This final patch adds necessary tracepoints and debug hooks to allow external 
 // analysis tools (like trace-cmd, ftrace, or eBPF) to monitor SCHED_BRS's behavior, 
 // ensuring the reproducibility of the paper's findings.

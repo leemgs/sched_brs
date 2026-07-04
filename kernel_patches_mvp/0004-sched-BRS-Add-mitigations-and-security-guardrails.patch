@@ -1,13 +1,15 @@
-// File: kernel_patches/0004-sched-tek-Add-mitigations-and-security-guardrails.patch
+// File: kernel_patches_mvp/0004-sched-brs-Add-mitigations-and-security-guardrails.patch
 // This patch implements safety and reliability features described in Section G (Mitigations)
 // to prevent denial-of-service (DoS) and timing side-channel attacks.
 
 #include <linux/sched_brs.h>
 #include <linux/proc_fs.h>
 
-// Max safe values (fixed-point based on paper's ranges)
+// Safe range caps (per-mille fixed-point, matching Table I).
+#define SCHED_BRS_ALPHA_MIN_CAP 100 // 0.10 min
 #define SCHED_BRS_ALPHA_MAX_CAP 350 // 0.35 max
-#define SCHED_BRS_BETA_MAX_CAP 300  // 0.30 max
+#define SCHED_BRS_BETA_MIN_CAP   50 // 0.05 min
+#define SCHED_BRS_BETA_MAX_CAP  300 // 0.30 max
 
 // Function to enforce parameter caps and safe ranges for /proc writes
 static int sched_brs_proc_write_handler(struct ctl_table *table, int write, 
@@ -21,19 +23,23 @@ static int sched_brs_proc_write_handler(struct ctl_table *table, int write,
     if (ret || !write)
         return ret;
 
-    // Post-write validation and clamping based on the parameter key
+    // Post-write validation and clamping based on the parameter key.
+    // "Writes outside safe ranges are rejected/clamped and logged."
     val = *(u32 *)table->data;
 
     if (strcmp(table->procname, "bias_alpha") == 0) {
-        if (val > SCHED_BRS_ALPHA_MAX_CAP) {
-            // "Writes outside safe ranges are rejected and logged"
-            printk(KERN_WARNING "SCHED_BRS: Alpha cap breach detected. Clamping to max.\n");
-            *(u32 *)table->data = SCHED_BRS_ALPHA_MAX_CAP;
+        if (val < SCHED_BRS_ALPHA_MIN_CAP || val > SCHED_BRS_ALPHA_MAX_CAP) {
+            printk(KERN_WARNING "SCHED_BRS: bias_alpha %u out of [%u,%u]; clamping.\n",
+                   val, SCHED_BRS_ALPHA_MIN_CAP, SCHED_BRS_ALPHA_MAX_CAP);
+            *(u32 *)table->data = clamp_t(u32, val, SCHED_BRS_ALPHA_MIN_CAP,
+                                          SCHED_BRS_ALPHA_MAX_CAP);
         }
     } else if (strcmp(table->procname, "bias_beta") == 0) {
-        if (val > SCHED_BRS_BETA_MAX_CAP) {
-            printk(KERN_WARNING "SCHED_BRS: Beta cap breach detected. Clamping to max.\n");
-            *(u32 *)table->data = SCHED_BRS_BETA_MAX_CAP;
+        if (val < SCHED_BRS_BETA_MIN_CAP || val > SCHED_BRS_BETA_MAX_CAP) {
+            printk(KERN_WARNING "SCHED_BRS: bias_beta %u out of [%u,%u]; clamping.\n",
+                   val, SCHED_BRS_BETA_MIN_CAP, SCHED_BRS_BETA_MAX_CAP);
+            *(u32 *)table->data = clamp_t(u32, val, SCHED_BRS_BETA_MIN_CAP,
+                                          SCHED_BRS_BETA_MAX_CAP);
         }
     }
 
@@ -48,7 +54,7 @@ static u64 sched_brs_apply_security_jitter(u64 score)
     // Check if the runqueue is under high load (contention)
     if (unlikely(sched_brs_params.jain_index < SCHED_BRS_JAIN_MITIGATION_LEVEL)) {
         // Apply small, randomized jitter to the scheduling score
-        u64 jitter = prandom_u34() % SCHED_BRS_JITTER_MAX;
+        u64 jitter = get_random_u32() % SCHED_BRS_JITTER_MAX;
         if (score > jitter)
             score -= jitter;
         else
@@ -68,3 +74,36 @@ static inline struct task_struct *sched_brs_pick_next_task(...)
     ...
 }
 */
+
+// --- Aging guardrail / starvation shield (Section IV-F) ---
+// Absolute-starvation protection referenced by patch 0002: any runnable task
+// whose undispatched wait exceeds S_max (100 ms) is force-promoted regardless
+// of its interactivity score, then re-armed. Together with the safe-box
+// projection this bounds the starvation rate S and is the boundedness
+// assumption (A1) underpinning the mean-square stability result (Theorem 1).
+
+#define SCHED_BRS_STARVE_NS (100ULL * NSEC_PER_MSEC) // S_max = 100 ms
+
+// Called at pick time before the interactivity-aware tie-break. Returns a task
+// that must be dispatched immediately, or NULL if none is starving.
+static inline struct task_struct *sched_brs_starvation_shield(struct run_queue *rq,
+                                                              u64 now_ns)
+{
+    struct task_struct *victim = NULL;
+    u64 worst_wait = SCHED_BRS_STARVE_NS;
+
+    list_for_each_entry(task, &rq->tasks, run_list) {
+        u64 wait = now_ns - task->se.brs_last_queued_ns;
+        if (wait > worst_wait) {   // pick the most-starved runnable task
+            worst_wait = wait;
+            victim = task;
+        }
+    }
+    if (victim) {
+        // Force-promote: pull vruntime to the runqueue minimum so the task is
+        // selected now; re-arm its wait clock on dispatch.
+        victim->se.vruntime = rq->min_vruntime;
+        victim->se.brs_last_queued_ns = now_ns;
+    }
+    return victim;
+}

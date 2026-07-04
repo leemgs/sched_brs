@@ -7,35 +7,71 @@ index 0000000..1111111 100644
  }
  
 +/* === SCHED_BRS bounded-bias hooks (illustrative) === */
-+static u32 sched_brs_bias_alpha = 20;   /* 0..100 => 0.00..1.00 */
-+static u32 sched_brs_bias_beta  = 15;   /* 0..100 => 0.00..1.00 */
++/* Table I defaults/ranges: alpha in [10,35], beta in [5,30] (hundredths). */
++static u32 sched_brs_bias_alpha = 20;   /* 0.20; safe range [10, 35] */
++static u32 sched_brs_bias_beta  = 15;   /* 0.15; safe range [5, 30]  */
 +static u32 sched_brs_mode       = 2;    /* 0=static,1=adaptive,2=hybrid */
 +
++/* Aging guardrail (Sec IV-F): a task undispatched longer than this is
++ * force-promoted regardless of B_i, bounding absolute starvation. */
++#define SCHED_BRS_STARVE_NS  (100ULL * NSEC_PER_MSEC)  /* 100 ms */
++
++/*
++ * Interactivity score B_i in hundredths (0..100), per Section IV-C:
++ *   B~ = lambda1*s + lambda2*w + lambda3*h  (defaults 0.5, 0.3, 0.2)
++ * with s = sleep ratio, w = I/O-wait ratio, h = min(1, nwake/nwake_ref),
++ * smoothed by an EWMA B <- (1-rho)B + rho*B~ (rho = 0.25). All three raw
++ * signals already exist in se.statistics / task_struct I/O accounting, so
++ * this is O(1) with no new data structures.
++ */
 +static inline u32 interactivity_score(struct sched_entity *se)
 +{
-+    /* Toy heuristic: derive from sleep time / IO wait / recent wakeup. */
-+    /* Production code should guard against wraparound & use fixed-point. */
-+    return clamp_t(u32, se->statistics.sleep_max >> 10, 0, 100);
++    u32 s = brs_sleep_ratio(se);      /* 0..100 */
++    u32 w = brs_iowait_ratio(se);     /* 0..100 */
++    u32 h = brs_wake_history(se);     /* 0..100, min(1, nwake/nwake_ref) */
++    u32 inst = (50u * s + 30u * w + 20u * h) / 100u;   /* convex combo */
++    /* EWMA with rho = 0.25 == (1/4): B = (3*B + inst) / 4. */
++    se->brs_B = (3u * se->brs_B + inst) / 4u;
++    return clamp_t(u32, se->brs_B, 0, 100);
 +}
 +
 +static void sched_brs_vruntime_bias(struct sched_entity *se, u64 *delta_exec_ns)
 +{
 +    u32 B = interactivity_score(se);         /* 0..100 */
-+    u64 alpha = sched_brs_bias_alpha;        /* 0..100 */
-+    /* v += dt * (1 + alpha * B) with fixed-point scaling (scaled by 1e-4) */
-+    u64 scale = 10000 + alpha * B;           /* 10000..20000+ */
++    u32 alpha = clamp_t(u32, sched_brs_bias_alpha, 10, 35);  /* Table I range */
++    /*
++     * Eq. (2): v += dt * (1 - alpha * B).  Fixed-point, scaled by 1e4:
++     *   scale = 10000 - (alpha/100)*(B/100)*10000 = 10000 - alpha*B.
++     * With alpha <= 35 and B <= 100, scale in [6500, 10000], i.e. the
++     * effective rate (1 - alpha*B) in [1 - alpha_max, 1] = [0.65, 1.0]
++     * (Definition 1 / Lemma 1): strictly positive, so vruntime is still
++     * monotone and the sign of progress never reverses.  Interactive
++     * (high-B) tasks accrue vruntime *more slowly* and are picked earlier.
++     */
++    u64 scale = 10000ULL - (u64)alpha * B;   /* 6500..10000 */
 +    *delta_exec_ns = div_u64(*delta_exec_ns * scale, 10000);
 +}
 +
-+/* Tie-breaker: prefer higher interactivity when vruntimes near-equal */
++/* Tie-breaker (Sec IV-D): pick argmin_i (vruntime_i - beta * B_i). We subtract
++ * beta*B from the compared key so higher-interactivity ties win. */
 +static s64 sched_brs_tiebreak_adjust(struct sched_entity *se)
 +{
 +    u32 B = interactivity_score(se);         /* 0..100 */
-+    u64 beta = sched_brs_bias_beta;          /* 0..100 */
-+    return -(s64)(beta * B);                 /* subtract from vruntime when close */
++    u32 beta = clamp_t(u32, sched_brs_bias_beta, 5, 30);   /* Table I range */
++    return -(s64)((u64)beta * B);            /* subtract from vruntime when close */
++}
++
++/* Aging guardrail: force-promote a task whose runnable-wait exceeds the cap. */
++static inline bool sched_brs_is_starved(struct sched_entity *se, u64 now_ns)
++{
++    return (now_ns - se->brs_last_queued_ns) > SCHED_BRS_STARVE_NS;
 +}
 +
  /* ... later in pick_next_entity() compare ... */
++ /* Phase 3 aging guardrail first: a starved task is force-promoted. */
++ if (sched_brs_is_starved(left, now_ns))  return left;
++ if (sched_brs_is_starved(right, now_ns)) return right;
++ /* Phase 2 interactivity-aware tie-break when vruntimes are near-equal. */
 - if (vruntime_left < vruntime_right)
 + if (abs(vruntime_left - vruntime_right) < vruntime_threshold) {
 +     vruntime_left  += sched_brs_tiebreak_adjust(left);

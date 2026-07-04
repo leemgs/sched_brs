@@ -1,4 +1,4 @@
-// File: kernel_patches/0005-sched-tek-Add-NUMA-awareness-and-load-distribution.patch
+// File: kernel_patches_mvp/0005-sched-brs-Add-NUMA-awareness-and-load-distribution.patch
 // This patch integrates SCHED_BRS with NUMA load balancing logic 
 // to ensure low deviation and balanced distribution across NUMA nodes, 
 // as stated in the paper's findings (less than 3.5% deviation).

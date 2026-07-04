@@ -1,4 +1,4 @@
-// File: kernel_patches/0000-sched-Enable-SCHED_BRS-build-and-Kconfig.patch
+// File: kernel_patches_mvp/0000-sched-Enable-SCHED_BRS-build-and-Kconfig.patch
 // This patch sets up the build environment for SCHED_BRS by modifying
 // Kconfig and Makefiles, and defining the main scheduler switch.
 //

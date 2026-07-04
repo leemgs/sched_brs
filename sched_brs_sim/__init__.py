@@ -1,1 +1,1 @@
-__all__ = ['scheduler','workloads','metrics','telemetry']
+__all__ = ['scheduler', 'workloads', 'metrics', 'telemetry', 'interactivity']

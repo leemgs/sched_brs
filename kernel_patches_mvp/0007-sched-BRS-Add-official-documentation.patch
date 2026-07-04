@@ -1,10 +1,10 @@
-// File: kernel_patches/0007-sched-tek-Add-official-documentation.patch
+// File: kernel_patches_mvp/0007-sched-brs-Add-official-documentation.patch
 // This patch finalizes the SCHED_BRS series by adding official documentation 
 // for the new scheduler, explaining its principles and tunable parameters.
 
-// --- A. Documentation/scheduler/sched-tek.rst (New File Content) ---
+// --- A. Documentation/scheduler/sched-brs.rst (New File Content) ---
 
-.. Documentation/scheduler/sched-tek.rst
+.. Documentation/scheduler/sched-brs.rst
 
 =======================================================
 SCHED_BRS: The Controlled Bias Scheduler
@@ -18,13 +18,13 @@ SCHED_BRS challenges the conventional trade-off between scheduling responsivenes
 1. Core Principle: Bounded Bias
 --------------------------------
 
-SCHED_BRS preferentially lowers the **vruntime** of interactive, latency-sensitive tasks based on their interactivity score (**B_i**). The degree of preference is controlled by the global **alpha (α)** coefficient.
+SCHED_BRS makes interactive, latency-sensitive tasks accumulate **vruntime** more slowly (so they are selected earlier) based on their interactivity score (**B_i**). The degree of preference is controlled by the global **alpha (α)** coefficient. B_i in [0,1] is the convex combination 0.5*sleep_ratio + 0.3*iowait_ratio + 0.2*wake_history over a sliding window (W=64), smoothed by an EWMA (rho=0.25), per Section IV-C.
 
-The vruntime update for a task is modified as:
+The vruntime update for a task is modified as (Eq. 2):
 
-    vruntime = vruntime + Δt * (1 + α * B_i)
+    vruntime = vruntime + Δt * (1 - α * B_i)
 
-This bias is "bounded" by the **Hybrid Controller**, which continuously monitors system-wide fairness and starvation metrics and auto-dampens α and β when necessary.
+Because 1 - α*B_i lies in [1 - α_max, 1] = [0.65, 1.0] it is strictly positive, so vruntime stays monotone and the sign of progress never reverses (Definition 1 / Lemma 1). This bias is "bounded" by the **Hybrid Controller**, which continuously monitors system-wide fairness and starvation metrics and auto-dampens α and β when necessary.
 
 2. Tunable Parameters (/proc/sys/sched_brs/)
 -----------------------------------------------
@@ -57,4 +57,4 @@ The scheduler exposes several knobs for advanced tuning and experimental validat
 // --- B. Documentation/scheduler/Makefile modification (Pseudo-code) ---
 
 # Append SCHED_BRS documentation to the build list
-obj-$(CONFIG_SCHED_BRS) += sched-tek.rst
+obj-$(CONFIG_SCHED_BRS) += sched-brs.rst
