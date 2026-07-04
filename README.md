@@ -37,10 +37,14 @@ fairness/starvation guardrail and an aging (starvation-shield) force-promotion
 
 ## What's inside
 - `sched_brs_sim/` — the simulator: `interactivity.py` (B_i), `scheduler.py`
-  (Eq. 2, tie-break, hybrid controller, aging guardrail), `workloads.py`
+  (Eq. 2, tie-break, hybrid controller, aging guardrail; `static`/`adaptive`/
+  `hybrid` modes, with `α=β=0` static emulating CFS), `workloads.py`
   (saturated representative workloads), `metrics.py`, `telemetry.py`.
 - `benchmarks/` — five workload benchmarks plus `adversarial.py`
-  (Sec IV-G/V-I), driven by `_common.py`; `run_all.sh` emits CSVs to `results/`.
+  (Sec IV-G/V-I), driven by `_common.py`, which scores three policies per
+  workload — CFS (α=β=0), a BFS/MuQSS-like low-latency reference (α=0.30,
+  β=0.25 static), and BRS (α=0.20, β=0.15 hybrid, Table I defaults) — over
+  12k steps; `run_all.sh` emits CSVs to `results/`.
 - `scripts/`
   - `analyze_results.py` — per-workload P95 (interactive/all/background),
     Jain, starvation, and BRS-vs-CFS P95 reduction.
