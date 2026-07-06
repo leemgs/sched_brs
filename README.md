@@ -54,6 +54,8 @@ fairness/starvation guardrail and an aging (starvation-shield) force-promotion
     mean 512, sd 128, seed 42).
   - `log_adaptation.py` — Section V-H controller-adaptation traces across
     idle→gaming→mixed transitions, written to `results/adaptation/`.
+  - `run_gui_redraw.sh` — placeholder for the GUI-redraw harness (see paper
+    artifact notes); not part of the automated pipeline.
 - `tests/` — unit/regression tests for the Def. 1 bound, Lemma 1, `B_i ∈ [0,1]`,
   the Eq. 2 sign, CFS reduction, and the fairness floor.
 - `kernel_patches/` — a single illustrative diff (`sched_brs.patch`) with the
@@ -106,6 +108,8 @@ same logic into an ordered patch set. Replace with a production patch when ready
 sched_brs-main/
 ├─ README.md
 ├─ LICENSE.md
+├─ brs_logo01.png
+├─ __init__.py
 ├─ kernel_patches/
 │  └─ sched_brs.patch
 ├─ kernel_patches_mvp/
@@ -115,14 +119,14 @@ sched_brs-main/
 │  ├─ __init__.py  interactivity.py  scheduler.py
 │  ├─ workloads.py  metrics.py  telemetry.py
 ├─ benchmarks/
-│  ├─ _common.py  run_all.sh
+│  ├─ __init__.py  _common.py  run_all.sh
 │  ├─ interactive.py  gaming.py  ai_inference.py
 │  ├─ data_analytics.py  streaming.py  adversarial.py
 ├─ scripts/
-│  ├─ analyze_results.py  doe_sweep.py
-│  ├─ gen_synth.py  log_adaptation.py  run_gui_redraw.sh
+│  ├─ analyze_results.py  doe_sweep.py  gen_synth.py
+│  ├─ log_adaptation.py  run_gui_redraw.sh
 ├─ tests/
-│  └─ test_bounds.py
+│  ├─ __init__.py  test_bounds.py
 ├─ ci/
 │  └─ run_tests.sh
 └─ results/
