@@ -1,0 +1,22 @@
+\section{Introduction}
+
+\label{sec:introduction}
+
+\IEEEPARstart{I}{n} latency-critical domains---Augmented/Virtual Reality (AR/VR), edge Artificial Intelligence (AI), and robotics---sub-\SI{100}{\milli\second} scheduling responsiveness is directly tied to Service Level Agreement (SLA) breaches, safety margins, and user-perceived quality \cite{10306992,4624248,5580094,9351534}. Even millisecond-scale scheduling delays can degrade user experience, miss trading opportunities, or destabilize control loops \cite{8762113,4624248,7792746}. While the Completely Fair Scheduler (CFS) is widely trusted for fairness and scalability, it often fails to deliver the responsiveness these workloads need: by treating all tasks equally it prevents starvation but produces noticeable latency differences for interactive tasks \cite{Bouron2018Battle,241774}. Alternatives such as BFS and the Multiple Queue Skiplist Scheduler (MuQSS) prioritize interactive tasks, but typically sacrifice fairness or require complex user-space configuration \cite{10306992,2020ThreadEK,7426385,1324648}.
+
+We tackle this problem inside the kernel itself. Rather than user-space fixes or complex heuristics, the Bounded Responsiveness Scheduler (BRS) reworks the scheduler's core logic---how it accounts for task progress and picks from the runqueue---to boost responsiveness for interactive workloads with bounded fairness deviation \cite{4663063,8360522}. BRS is plug-and-play: it needs no application changes, and its controls are deliberately simple. Three research questions shape the work:
+\begin{itemize}
+ \item \textbf{RQ1:} Can latency be cut significantly while keeping tasks treated fairly?
+ \item \textbf{RQ2:} Can BRS sustain effectiveness under continuous heavy load on a mobile system?
+ \item \textbf{RQ3:} What are the trade-offs among responsiveness, energy efficiency, and scalability?
+\end{itemize}
+
+Our evaluation answers all three: through a few targeted changes rather than a kernel rewrite, BRS cuts P95 scheduling latency by up to 37.8\% and improves frame consistency by 28.4\% while keeping fairness comparable to CFS \cite{6365626,7426385}. Responsiveness, fairness, and power have traditionally been viewed as inherently contradictory \cite{Bouron2018Battle,1244943,8338088}; BRS instead reframes them as \emph{tunable} dimensions via a bounded bias in the kernel loop, showing that principled coordination plus hybrid control cuts latency with bounded fairness deviation and no measurable battery-life penalty under the stated assumptions.
+
+Using sleep and I/O behavior to favor interactive tasks is a classical idea: Multilevel Feedback Queue (MLFQ) schedulers and the Linux O(1) scheduler that preceded CFS both promoted tasks from observed sleep behavior. BRS differs in three respects, elaborated in Section~\ref{subsec:rw-mlfq}: it expresses the preference as an \emph{explicitly bounded} \textit{vruntime} offset (worst-case deviation from CFS known a priori) rather than a discrete queue promotion; the bias is gated by a feedback controller with a mean-square stability guarantee, whereas classical heuristics offer none; and the interactivity signal is bounded and aged, limiting a task's leverage from strategically sleeping to inflate its perceived interactivity. The main contributions are:
+\begin{itemize}
+ \item \textbf{Responsiveness-as-a-knob:} we reformulate the fairness--responsiveness relation as a tunable dimension via bounded \textit{vruntime} (virtual runtime) bias in the kernel path.
+ \item \textbf{Hybrid controller:} a lightweight feedback loop acts as a safety guardrail, retuning the bias the moment a resource-shortage risk appears \cite{5580094,7426385}.
+ \item \textbf{Parameter tuning:} we derive how bias settings affect latency and fairness (Section~\ref{subsec:math-stability}) and provide ready-to-use defaults \cite{7426385}.
+ \item \textbf{Bounded guarantees and robustness:} we formally specify the bias bound, tie the stability preconditions to measurable controller quantities, and show why the bounded, aged interactivity score resists gaming (Sections~\ref{subsec:vruntime-nudge}--\ref{subsec:math-stability}).
+\end{itemize}

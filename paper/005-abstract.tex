@@ -1,0 +1,9 @@
+\begin{abstract}
+Modern latency-sensitive systems such as autonomous robots, real-time analytics, and extended reality (XR) require not only fast scheduling (sub-100ms), but also fairness and power efficiency. However, current Linux schedulers, including the Completely Fair Scheduler (CFS), struggle to find the right balance between fairness, responsiveness, and power consumption. These schedulers sacrifice latency-sensitive task temporal restrictions to maximize aggregate performance, causing unexpected scheduling jitter. Consequently, task conflicts can lead to latency instability or jitter.
+We challenge the long-standing assumption of these inevitable contradictions and propose a kernel-based framework, the Bounded Responsiveness Scheduler (BRS), to achieve superior interactivity through a formally bounded bias mechanism with bounded fairness deviation and provable stability under the stated assumptions. BRS reformulates responsiveness as a tunable, explicitly bounded offset on virtual runtime, governed by a lightweight hybrid feedback controller that monitors fairness and starvation and damps the bias whenever a guardrail is approached. Compared to the current CFS, BRS improves performance per watt by 12\% and reduces 95th Percentile (P95) tail latency by up to 37.8\% on ARM big.LITTLE and 35.2\% on x86 architectures, while keeping Jain's fairness index above 0.96 and the starvation rate below 1.2\%. This level of performance is achievable across a wide range of system architectures and large-scale configurations, while keeping fairness deviation bounded. This study demonstrates that BRS can be used to build operating systems that perform well in the real world, where fairness and latency are critical.
+\end{abstract}
+
+
+\begin{IEEEkeywords}
+Kernel scheduling, bounded responsiveness, low-latency systems, fairness-aware scheduling, operating systems.
+\end{IEEEkeywords}

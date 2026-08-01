@@ -1,0 +1,257 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% IEEE Submission Dashboard - https://ieee.atyponrex.com/submission/dashboard
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \documentclass[10pt,journal,compsoc]{IEEEtran}
+% \documentclass[lettersize,journal]{IEEEtran}
+% \documentclass[letterpaper,journal]{IEEEtran}
+\documentclass[journal]{IEEEtran}
+% ==== Core packages (normalized) ====
+
+% How to hide statements: 
+%   - To enable  tags: \iftrue  and \fi
+%   - To disable tags: \iffalse and \fi
+% How to turn-on (or turn-off) page number:
+%   - To turn-on  the page number: {plain}
+%   - To turn-off the page number: {empty}
+% Usage (Syntax): 
+%   \documentstyle[twocolumn]{article}
+%   \pagestyle{empty}
+%    ...
+%   \maketitle
+%   \thispagestyle{empty}
+
+% How to print the page number at each page 
+\pagestyle{empty}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{amsthm}  % required for theorem environments
+%\usepackage{amsmath}
+%\usepackage{amssymb}
+\usepackage{makecell}
+%\usepackage{amsmath,amsfonts,amssymb,mathtools}
+%\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{xspace}
+\usepackage{pifont}
+% Checkmark / Xmark symbols
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{xurl}
+\usepackage{url}
+
+
+% Hyperlinks to content
+% \usepackage[linktocpage=true]{hyperref}
+% \usepackage{hyperref}
+% \usepackage[nameinlink]{cleveref}
+% \usepackage[hidelinks]{hyperref}
+% TMC requirement (decision letter): "Text in any color other than black is not
+% acceptable." Links remain active but are rendered black instead of blue.
+\usepackage[colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black]{hyperref}
+
+\usepackage{cleveref}
+%\usepackage{amsmath,amsfonts}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{array}
+\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\usepackage{textcomp}
+\usepackage{stfloats}
+\usepackage{verbatim}
+\usepackage{cite}
+%\hyphenation{op-tical net-works semi-conduc-tor IEEE-Xplore}
+%\usepackage{amssymb,amsmath,amsthm,mathtools}
+%\usepackage{hyphenat}
+
+
+%% ------------- ORC ID Template: Start ----------------------
+% https://tex.stackexchange.com/questions/498688/orcid-in-latex-file-of-ieee-trans-in-a-customized-position
+
+\usepackage{scalerel}
+\usepackage{tikz}
+\usetikzlibrary{svg.path}
+
+\definecolor{orcidlogocol}{HTML}{A6CE39}
+\tikzset{
+  orcidlogo/.pic={
+ \fill[orcidlogocol] svg{M256,128c0,70.7-57.3,128-128,128C57.3,256,0,198.7,0,128C0,57.3,57.3,0,128,0C198.7,0,256,57.3,256,128z};
+ \fill[white] svg{M86.3,186.2H70.9V79.1h15.4v48.4V186.2z}
+ svg{M108.9,79.1h41.6c39.6,0,57,28.3,57,53.6c0,27.5-21.5,53.6-56.8,53.6h-41.8V79.1z M124.3,172.4h24.5c34.9,0,42.9-26.5,42.9-39.7c0-21.5-13.7-39.7-43.7-39.7h-23.7V172.4z}
+ svg{M88.7,56.8c0,5.5-4.5,10.1-10.1,10.1c-5.6,0-10.1-4.6-10.1-10.1c0-5.6,4.5-10.1,10.1-10.1C84.2,46.7,88.7,51.3,88.7,56.8z};
+  }
+}
+
+\newcommand\orcidicon[1]{\href{https://orcid.org/#1}{\mbox{\scalerel*{
+\begin{tikzpicture}[yscale=-1,transform shape]
+\pic{orcidlogo};
+\end{tikzpicture}
+}{|}}}}
+
+%% ------------- ORC ID Template: End ----------------------
+
+
+\providecommand{\cmark}{\ding{51}}
+\providecommand{\xmark}{\ding{55}}
+\providecommand{\etal}{\textit{et al.}\xspace}
+\DeclareMathOperator{\E}{\mathbb{E}}
+\DeclareMathOperator{\Var}{\mathrm{Var}}
+
+\theoremstyle{plain}
+% Plain (non section-prefixed) numbering so that Definition, Lemma, and the
+% Theorem 1 box share a single, harmonized counter style (Reviewer 4, minor 1).
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\lstdefinelanguage{json}{
+ basicstyle=\ttfamily\small,
+ numbers=left,
+ numberstyle=\tiny,
+ stepnumber=1,
+ showstringspaces=false,
+ breaklines=true
+}
+\lstset{frame=single}
+% === End patch ===
+
+
+\IEEEoverridecommandlockouts
+
+%########################################################################## Geunsik Area ###########
+
+
+
+
+% direct Unicode circled numbers in LaTeX
+\usepackage{pifont} 
+
+% styling tweaks to improve theorem/algorithm readability
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{listings}
+
+%% To keep strictly tuned whitespace rules among sections (e.g., section, subsection, and subsubsection)
+%% for decreasing or increasing the vertical space between sections
+\usepackage{titlesec}
+\titlespacing*{\section}{0.70pt}{0.50\baselineskip}{0.20\baselineskip}
+\titlespacing*{\subsection}{0.70pt}{0.50\baselineskip}{0.20\baselineskip}
+\titlespacing*{\subsubsection}{0.70pt}{0.50\baselineskip}{0.20\baselineskip}
+
+%% Reduce vertical space (padding) after figure (a big effect)
+%% Warning: "Text page 7 contains only floats."
+%% https://www.reddit.com/r/LaTeX/comments/b4mipa/how_to_decrease_space_between_paragraph_and/
+\setlength{\textfloatsep}{0.70pt}
+\setlength{\abovecaptionskip}{0.70pt}
+\setlength{\belowcaptionskip}{0.70pt}
+
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\urlstyle{tt}
+
+
+
+\newcommand{\Lninetyfive}{L_{95}}
+\newcommand{\Jain}{\mathcal{J}}
+\providecommand{\cmark}{\ding{51}}
+\providecommand{\xmark}{\ding{55}}
+
+% \needsdata marks a value the author must measure before camera-ready.
+% Grep "needsdata" to find all; detailed instructions are in % TODO comments.
+\newcommand{\needsdata}[1]{\textbf{[#1]}}
+
+
+
+% JSON language for listings
+\lstdefinelanguage{json}{
+ basicstyle=\ttfamily\small,
+ numbers=left, numberstyle=\tiny, stepnumber=1,
+ showstringspaces=false,
+ breaklines=true
+}
+
+
+% Listings setup (handles code blocks and JSON/diff-like listings)
+\lstset{basicstyle=\ttfamily\small, breaklines=true, columns=fullflexible, showstringspaces=false}
+
+% Minimal JSON language for listings
+\lstdefinelanguage{json}{
+ basicstyle=\ttfamily\small,
+ showstringspaces=false,
+ morestring=[b]",
+ morecomment=[l]{//},
+ literate=
+ *{0}{{{\color{black}0}}}{1}
+ {1}{{{\color{black}1}}}{1}
+ {2}{{{\color{black}2}}}{1}
+ {3}{{{\color{black}3}}}{1}
+ {4}{{{\color{black}4}}}{1}
+ {5}{{{\color{black}5}}}{1}
+ {6}{{{\color{black}6}}}{1}
+ {7}{{{\color{black}7}}}{1}
+ {8}{{{\color{black}8}}}{1}
+ {9}{{{\color{black}9}}}{1}
+ {:}{{{\color{black}{:}}}}{1}
+ {,}{{{\color{black}{,}}}}{1}
+ {"}{{{\color{black}{"}}}}{1}
+}
+
+
+\usepackage{etoolbox}
+% IEEEtran's biography environment prefixes each entry with
+%   \vskip \@IEEEBIOskipN plus 1fil minus 0\baselineskip
+% whose INFINITE (fil) stretch, under \flushbottom, soaks up all remaining
+% slack in the final column and pools it into one large gap ABOVE the
+% biography (pushing the photo to the column bottom). \IEEEbiography itself is
+% only a dispatcher macro (\@protected@testopt ...); the real body lives in the
+% internal macro \csname\string\IEEEbiography\endcsname, which is what we patch.
+% We replace the infinite stretch with a small finite one so the biography sits
+% directly after the last reference rather than being pushed to the column floor.
+\makeatletter
+\expandafter\patchcmd\csname\string\IEEEbiography\endcsname
+  {plus 1fil}{plus 0.1\baselineskip}
+  {\typeout{BRS-PATCH: biography glue PATCHED}}
+  {\typeout{BRS-PATCH: biography glue PATCH FAILED}}
+% Shrink the generous 4-baselineskip nominal gap IEEEtran inserts before a
+% biography, and match the photo box to the actual 1in image, so the biography
+% sits closer to the final reference with less wasted vertical space.
+\def\@IEEEBIOskipN{0.75\baselineskip}%
+\def\@IEEEBIOphotodepth{1in}%
+\def\@IEEEBIOhangdepth{1in}%
+\makeatother
+% In two-column mode, \flushbottom only stretches the FIRST column; the final
+% column keeps its natural height, leaving slack at the bottom of the last page.
+% flushend balances the two columns of the last page so the references split
+% evenly across both columns and the biography fills the bottom of the final
+% column, eliminating the large trailing gap.
+\usepackage{flushend}
+
+\begin{document}
+
+\input{./001-title}
+\input{./003-author}
+
+
+
+\input{./005-abstract}
+\input{./010-introduction}
+\input{./020-background}
+\input{./030-motivation}
+\input{./050-design}
+\input{./060-evaluation}
+\input{./070-related_work}
+\input{./080-discussion}
+\input{./100-conclusion}
+\input{./095_reference.tex} 
+\input{./099_bib.tex} 
+
+
+\end{document}

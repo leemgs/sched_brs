@@ -1,0 +1,24 @@
+\section{Motivation}
+\label{sec:motivation}
+
+As load grows, users still expect the system to stay fast. This challenges the long-standing emphasis on throughput in CPU scheduling, especially under unpredictable tail latency \cite{Bouron2018Battle,10306992}.
+
+\subsection{Problem Statement}
+Interactive applications suffer when tail scheduling latency and wake-up jitter spike under CPU contention \cite{10306992}. Let $L$ be per-task scheduling latency and $W$ wake-up jitter (short-term variation in wake-up-to-run delay). User experience correlates with tail statistics such as $P95(L)$, $P99(L)$, and frame-time variance \cite{8762113}. Purely fair policies lengthen these tails when short, latency-sensitive tasks compete with long CPU-bound jobs \cite{Bouron2018Battle}.
+
+\subsection{A Simple Objective View}
+We consider a composite objective aggregating system-level metrics:
+\begin{equation}
+\begin{split}
+\min_{\pi}\; \mathcal{O}(\pi) &= \alpha \cdot P95(L_{\pi}) + \beta \cdot P99(L_{\pi}) + \gamma \cdot \mathrm{Var}(\mathrm{FPS}_{\pi}) \\
+\text{s.t.}\;& \mathrm{Fairness}_{\pi} \ge \tau,\;\; \mathrm{Overhead}_{\pi} \le \eta
+\end{split}
+\end{equation}
+where $\pi$ is a scheduling policy and $\tau,\eta$ encode fairness and overhead budgets. CFS satisfies the fairness constraint well but is suboptimal for $\mathcal{O}$ in interactive regimes \cite{Bouron2018Battle}. BRS avoids radical changes: it adjusts \textit{vruntime} and task selection through small, principled biases that drive the scheduler toward a better balance \cite{10306992}.
+
+\subsection{Why Kernel-Level?}
+User-space techniques (cgroups, nice/ionice, application schedulers) cannot preempt with runqueue awareness or adjust \textit{vruntime} semantics \cite{2020ThreadEK,Bouron2018Battle}. Kernel integration enables (1)~\textbf{fine-grained preemption} of recent interactive wake-ups without cross-space overhead; (2)~\textbf{deterministic guardrails} enforcing starvation caps and safe CFS-like defaults \cite{10306992}; and (3)~\textbf{operability}---a \texttt{/proc} interface for instant policy changes and quick rollback. Our design adds aging and saturation-aware fallbacks to keep Jain's index high and starvation low, validated empirically in Section~\ref{sec:evaluation} \cite{Guo2013JainFairness}.
+
+\subsection{Preliminary Observations}
+\label{subsec:observation}
+Preliminary experiments motivated the bounded-bias approach \cite{10306992,4663063}. Comparing an early BRS prototype against unmodified CFS on a game workload and a GUI interaction benchmark \cite{8762113}, three effects stood out. (i)~\textbf{Tail-latency sensitivity:} a modest 5--15\% reduction in effective \textit{vruntime} for recently woken tasks lowered scheduling latency by up to 32\% and P95 jitter by 20\% \cite{4624248,8338088}. (ii)~\textbf{Frame stability:} FPS variance dropped 24\%, smoothing delivery during input bursts \cite{9121657}. (iii)~\textbf{Wake-up jitter:} moving arbitration into the kernel eliminated \SI{1.8}{\micro\second} of user-space overhead and stabilized wake-up latency under saturation \cite{67577}. Kernel-path responsiveness biasing thus improves user-visible metrics without extensive user-space tuning, motivating the trade-off study in Section~\ref{sec:evaluation}.
