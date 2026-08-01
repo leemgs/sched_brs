@@ -17,7 +17,6 @@ LaTeX sources and the compiled PDF for the paper accepted to the
 | `IEEEtran.cls`, `IEEEtranDOI.bst` | IEEE journal class and DOI-aware bibliography style.       |
 | `fig_*.png`, `fig0_author-lim2.png`               | Figures (architecture, evaluation, author photo).     |
 | `latexmkrc`               | `latexmk` configuration (sets the build time zone).               |
-| `CHANGES_THIS_REVISION.md`, `CHANGES_R2_revision.md`  | Per-revision change logs (R1, R2).    |
 
 ## Building
 
