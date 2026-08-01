@@ -216,5 +216,34 @@ sched_brs-main/
    └─ .gitkeep
 ```
 
+## Citation
+
+If you use this artifact or build on the Bounded Responsiveness Scheduler
+(BRS) in your research, please cite the paper. It has been accepted for
+publication in the *IEEE Transactions on Mobile Computing* (TMC), 2026
+(manuscript ID **TMC-2026-01-0047**).
+
+**Plain text (IEEE style):**
+
+> G. Lim, "Practical Bounded Responsiveness Scheduling for Low-Latency
+> Mobile Systems," *IEEE Transactions on Mobile Computing*, 2026 (to appear).
+
+**BibTeX:**
+
+```bibtex
+@article{lim2026brs,
+  author  = {Lim, Geunsik},
+  title   = {Practical Bounded Responsiveness Scheduling for Low-Latency Mobile Systems},
+  journal = {IEEE Transactions on Mobile Computing},
+  year    = {2026},
+  note    = {To appear. Manuscript ID: TMC-2026-01-0047},
+  publisher = {IEEE},
+}
+```
+
+> **Note:** The volume, issue, page range, and DOI are assigned by IEEE at
+> final publication; please update the `volume`, `number`, `pages`, and `doi`
+> fields once the article appears on IEEE Xplore.
+
 ## License
 Apache-2.0. See `LICENSE.md`.
